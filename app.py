@@ -110,7 +110,7 @@ city_quota = (
 )
 
 # =====================================================
-# TABLE: SPECIALTY-LEVEL STRUCTURE (NO UNIVERSITY INDEX)
+# TABLE: SPECIALTY-LEVEL STRUCTURE (NO UNIVERSITY)
 # =====================================================
 
 specialty_table = (
@@ -276,7 +276,7 @@ app.layout = html.Div([
 
     html.Hr(),
 
-    # Specialty table (no university index)
+    # Specialty table (no university)
     html.H2("Specialty Portfolio Structure"),
     dash_table.DataTable(
         data=specialty_table.round(2).to_dict("records"),
