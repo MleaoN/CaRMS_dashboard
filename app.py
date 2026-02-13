@@ -27,7 +27,7 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 # =====================================================
-# LOAD DATA
+# LOAD & PREPARE DATA
 # =====================================================
 
 df = pd.read_sql(f"SELECT * FROM {TABLE}", engine)
@@ -37,15 +37,15 @@ df["program_length"] = pd.to_numeric(df["program_length"], errors="coerce")
 df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 
 # =====================================================
-# CITY MAPPING
+# CITY MAPPING (Postal FSA → City)
 # =====================================================
 
 FSA_TO_CITY = {
-    "H3A": "Montreal","A1C": "St. John's","M5S": "Toronto","K1N": "Ottawa",
-    "L8S": "Hamilton","L6Y": "Brampton","N3R": "Brantford","N2L": "Waterloo",
-    "N2G": "Kitchener","N9B": "Windsor","L2G": "Niagara","N3Y": "Simcoe",
-    "N4K": "Owen Sound","T6G": "Edmonton","R3T": "Winnipeg",
-    "V2T": "Fraser","V6T": "Vancouver"
+    "H3A": "Montreal", "A1C": "St. John's", "M5S": "Toronto", "K1N": "Ottawa",
+    "L8S": "Hamilton", "L6Y": "Brampton", "N3R": "Brantford", "N2L": "Waterloo",
+    "N2G": "Kitchener", "N9B": "Windsor", "L2G": "Niagara", "N3Y": "Simcoe",
+    "N4K": "Owen Sound", "T6G": "Edmonton", "R3T": "Winnipeg",
+    "V2T": "Fraser", "V6T": "Vancouver"
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
@@ -110,6 +110,21 @@ city_quota = (
 )
 
 # =====================================================
+# TABLE: SPECIALTY-LEVEL STRUCTURE (NO UNIVERSITY INDEX)
+# =====================================================
+
+specialty_table = (
+    df.groupby("specialty")
+      .agg(
+          Residencies=("specialty", "count"),
+          Avg_Quota=("quota", "mean"),
+          Avg_Length=("program_length", "mean")
+      )
+      .reset_index()
+      .sort_values("Residencies", ascending=False)
+)
+
+# =====================================================
 # FIGURES
 # =====================================================
 
@@ -162,7 +177,6 @@ fig_specialty_volume = px.bar(
     title="Top Specialties by Program Volume"
 )
 
-# Funnel
 df["length_bucket"] = pd.cut(
     df["program_length"],
     bins=[0, 2, 4, 6, 10],
@@ -184,7 +198,6 @@ fig_funnel = go.Figure(
 )
 fig_funnel.update_layout(title="Program Length Structure Funnel")
 
-# Time series
 df["year_month"] = df["approved_date"].dt.to_period("M").astype(str)
 
 time_series = (
@@ -206,7 +219,7 @@ fig_time = px.line(
 # =====================================================
 
 app = dash.Dash(__name__)
-server = app.server  # REQUIRED for gunicorn
+server = app.server
 
 CARD_STYLE = {
     "padding": "18px",
@@ -224,6 +237,7 @@ app.layout = html.Div([
         style={"textAlign": "center", "marginBottom": "40px"}
     ),
 
+    # National KPIs
     html.H2("National Overview"),
     html.Div([
         html.Div([html.H4("Avg Quota / Specialty"), html.H2(f"{avg_quota_overall}")], style=CARD_STYLE),
@@ -235,31 +249,47 @@ app.layout = html.Div([
 
     html.Hr(),
 
+    # Provincial view
     html.H2("Provincial Capacity & Distribution"),
     dcc.Graph(figure=fig_residency_prov),
     dcc.Graph(figure=fig_quota_prov),
 
     html.Hr(),
 
+    # City view
     html.H2("City-Level Distribution"),
     dcc.Graph(figure=fig_residency_city),
     dcc.Graph(figure=fig_quota_city),
 
     html.Hr(),
 
+    # Specialty portfolio
     html.H2("Specialty Portfolio"),
     dcc.Graph(figure=fig_specialty_volume),
     dcc.Graph(figure=fig_funnel),
 
     html.Hr(),
 
+    # Accreditation trend
     html.H2("Accreditation Trend"),
-    dcc.Graph(figure=fig_time)
+    dcc.Graph(figure=fig_time),
 
+    html.Hr(),
+
+    # Specialty table (no university index)
+    html.H2("Specialty Portfolio Structure"),
+    dash_table.DataTable(
+        data=specialty_table.round(2).to_dict("records"),
+        columns=[{"name": i, "id": i} for i in specialty_table.columns],
+        sort_action="native",
+        page_size=10
+    ),
+
+    html.Hr(),
 ])
 
 # =====================================================
-# LOCAL RUN (Development Only)
+# RUN
 # =====================================================
 
 if __name__ == "__main__":
