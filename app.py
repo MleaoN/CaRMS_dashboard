@@ -34,16 +34,8 @@ df["program_length"] = pd.to_numeric(df["program_length"], errors="coerce")
 df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 
 # =====================================================
-# CITY MAPPING (FSA → City, fallback to province_unknown_city)
+# CITY MAPPING — REAL CITY OR PROVINCE_UNKNOWN_CITY
 # =====================================================
-
-FSA_TO_CITY = {
-    "H3A": "Montreal", "A1C": "St. John's", "M5S": "Toronto", "K1N": "Ottawa",
-    "L8S": "Hamilton", "L6Y": "Brampton", "N3R": "Brantford", "N2L": "Waterloo",
-    "N2G": "Kitchener", "N9B": "Windsor", "L2G": "Niagara", "N3Y": "Simcoe",
-    "N4K": "Owen Sound", "T6G": "Edmonton", "R3T": "Winnipeg",
-    "V2T": "Fraser", "V6T": "Vancouver"
-}
 
 # Normalize province names
 PROVINCE_NORMALIZE = {
@@ -66,15 +58,17 @@ PROVINCE_UNKNOWN_CITY = {
     prov: f"{prov}_unknown_city" for prov in df["province"].unique()
 }
 
+# Extract FSA
 df["FSA"] = df["postal_code"].astype(str).str[:3]
 
-# Step 1: Try FSA mapping
+# Step 1: Try FSA → real city
 df["city"] = df["FSA"].map(FSA_TO_CITY)
 
-# Step 2: Fallback to province_unknown_city
+# Step 2: If city is null → use province_unknown_city
 df["city"] = df.apply(
-    lambda row: row["city"] if pd.notna(row["city"])
-                else PROVINCE_UNKNOWN_CITY.get(row["province"], "unknown_city"),
+    lambda row: row["city"]
+    if pd.notna(row["city"])
+    else PROVINCE_UNKNOWN_CITY.get(row["province"], "unknown_city"),
     axis=1
 )
 
@@ -243,3 +237,4 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+
