@@ -264,23 +264,21 @@ app.layout = html.Div([
 
     html.Hr(),
 
-    html.H2("Accreditation Trend"),
-    dcc.Graph(figure=fig_time)
+html.H2("Accreditation Trend"),
+dcc.Graph(figure=fig_time),
 
-    html.H2("Specialty Portfolio Structure"),
-    html.Div([
-        dcc.Graph(figure=fig_specialty_volume),
-        dcc.Graph(figure=fig_funnel)
-    ], style={"display": "flex", "gap": "40px"}),
+html.H2("Specialty Portfolio Structure"),
+html.Div([
+    dcc.Graph(figure=fig_specialty_volume),
+    dcc.Graph(figure=fig_funnel)
+], style={"display": "flex", "gap": "40px"}),
 
-    dash_table.DataTable(
-        data=specialty_table.round(2).to_dict("records"),
-        columns=[{"name": i, "id": i} for i in specialty_table.columns],
-        sort_action="native",
-        page_size=10
-    ),
-
-    html.Hr(),
+dash_table.DataTable(
+    data=specialty_table.round(2).to_dict("records"),
+    columns=[{"name": i, "id": i} for i in specialty_table.columns],
+    sort_action="native",
+    page_size=10
+),    html.Hr(),
 
 ])
 
@@ -290,6 +288,7 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+
 
 
 
