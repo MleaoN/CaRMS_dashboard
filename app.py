@@ -1,6 +1,6 @@
 # =====================================================
 # CANADIAN RESIDENCY PROGRAM STRATEGY DASHBOARD
-# Production-Ready | Render Deployment Compatible
+# Render-Compatible | Uses DATABASE_URL
 # =====================================================
 
 import os
@@ -12,10 +12,8 @@ from dash import dcc, html, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 
-#print("DEBUG: DATABASE_URL =", os.getenv("DATABASE_URL"))
-
 # =====================================================
-# DATABASE CONFIG (Render Compatible)
+# DATA EXTRACTION & CLEANING
 # =====================================================
 
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -25,11 +23,6 @@ if not DATABASE_URL:
     raise ValueError("DATABASE_URL environment variable not set.")
 
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-
-# =====================================================
-# LOAD DATA
-# =====================================================
-
 df = pd.read_sql(f"SELECT * FROM {TABLE}", engine)
 
 df["quota"] = pd.to_numeric(df["quota"], errors="coerce").fillna(0)
@@ -37,18 +30,19 @@ df["program_length"] = pd.to_numeric(df["program_length"], errors="coerce")
 df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 
 # =====================================================
-# CITY MAPPING
+# CITY MAPPING (Postal FSA → City)
 # =====================================================
 
 FSA_TO_CITY = {
     "H3A": "Montreal","A1C": "St. John's","M5S": "Toronto","K1N": "Ottawa",
     "L8S": "Hamilton","L6Y": "Brampton","N3R": "Brantford","N2L": "Waterloo",
-    "N2G": "Kitchener","N9B": "Windsor","L2G": "Niagara",
-    "T6G": "Edmonton","R3T": "Winnipeg","V6T": "Vancouver"
+    "N2G": "Kitchener","N9B": "Windsor","L2G": "Niagara","N3Y": "Simcoe",
+    "N4K": "Owen Sound","T6G": "Edmonton","R3T": "Winnipeg",
+    "V2T": "Fraser","V6T": "Vancouver"
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
-df["city"] = df["FSA"].map(FSA_TO_CITY)
+df["city"] = df["FSA"].map(FSA_TO_CITY).fillna("Unknown")
 
 # =====================================================
 # KPI CALCULATIONS
@@ -70,14 +64,11 @@ lowest_specialty = specialty_quota_avg.sort_values(
     "avg_quota", ascending=True
 ).iloc[0]
 
-approved_pct = round(
-    (df["accreditation_status"] == "Approved").mean() * 100, 1
-)
-
+approved_pct = round((df["accreditation_status"] == "Approved").mean() * 100, 1)
 avg_program_length = round(df["program_length"].mean(), 1)
 
 # =====================================================
-# AGGREGATIONS
+# PROVINCE & CITY AGGREGATIONS
 # =====================================================
 
 prov_programs = (
@@ -109,7 +100,7 @@ city_quota = (
 )
 
 # =====================================================
-# NEW TABLE: UNIVERSITY + SPECIALTY
+# UNIVERSITY + SPECIALTY TABLE
 # =====================================================
 
 university_specialty_table = (
@@ -123,7 +114,7 @@ university_specialty_table = (
 )
 
 # =====================================================
-# FIGURES
+# RAINBOW / QUALITATIVE BAR CHARTS
 # =====================================================
 
 fig_residency_prov = px.bar(
@@ -131,7 +122,7 @@ fig_residency_prov = px.bar(
     x="province",
     y="Programs",
     color="Programs",
-    color_continuous_scale="Rainbow",
+    color_discrete_sequence=px.colors.qualitative.Set2,
     title="Residency Count per Province"
 )
 
@@ -140,7 +131,7 @@ fig_quota_prov = px.bar(
     x="province",
     y="Quota",
     color="Quota",
-    color_continuous_scale="Rainbow",
+    color_discrete_sequence=px.colors.qualitative.Set2,
     title="Total Quota per Province"
 )
 
@@ -149,7 +140,8 @@ fig_residency_city = px.bar(
     x="city",
     y="Programs",
     color="province",
-    title="Residency Count per City (Grouped by Province)"
+    title="Residency Count per City (Grouped by Province)",
+    color_discrete_sequence=px.colors.qualitative.Set3
 )
 
 fig_quota_city = px.bar(
@@ -157,8 +149,13 @@ fig_quota_city = px.bar(
     x="city",
     y="Quota",
     color="province",
-    title="Total Quota per City (Grouped by Province)"
+    title="Total Quota per City (Grouped by Province)",
+    color_discrete_sequence=px.colors.qualitative.Set3
 )
+
+# =====================================================
+# SPECIALTY ANALYSIS
+# =====================================================
 
 specialty_dist = (
     df.groupby("specialty")
@@ -174,6 +171,10 @@ fig_specialty_volume = px.bar(
     orientation="h",
     title="Top Specialties by Program Volume"
 )
+
+# =====================================================
+# FUNNEL – PROGRAM LENGTH DISTRIBUTION
+# =====================================================
 
 df["length_bucket"] = pd.cut(
     df["program_length"],
@@ -196,6 +197,10 @@ fig_funnel = go.Figure(
 )
 fig_funnel.update_layout(title="Program Length Structure Funnel")
 
+# =====================================================
+# TEMPORAL TREND
+# =====================================================
+
 df["year_month"] = df["approved_date"].dt.to_period("M").astype(str)
 
 time_series = (
@@ -213,11 +218,11 @@ fig_time = px.line(
 )
 
 # =====================================================
-# DASH APP
+# DASH APP LAYOUT — STORYTELLING STRUCTURE
 # =====================================================
 
 app = dash.Dash(__name__)
-server = app.server
+server = app.server  # for gunicorn on Render
 
 CARD_STYLE = {
     "padding": "18px",
@@ -230,11 +235,13 @@ CARD_STYLE = {
 
 app.layout = html.Div([
 
+    # TITLE
     html.H1(
         "Canadian Residency Program Strategy Dashboard",
         style={"textAlign": "center", "marginBottom": "40px"}
     ),
 
+    # KPI STORY — NATIONAL SNAPSHOT
     html.H2("National Overview"),
     html.Div([
         html.Div([html.H4("Avg Quota / Specialty"), html.H2(f"{avg_quota_overall}")], style=CARD_STYLE),
@@ -246,30 +253,34 @@ app.layout = html.Div([
 
     html.Hr(),
 
+    # PROVINCIAL STORY — CAPACITY & DISTRIBUTION
     html.H2("Provincial Capacity & Distribution"),
-    dcc.Graph(figure=fig_residency_prov),
-    dcc.Graph(figure=fig_quota_prov),
+    html.Div([
+        dcc.Graph(figure=fig_residency_prov),
+        dcc.Graph(figure=fig_quota_prov)
+    ], style={"display": "flex", "gap": "40px"}),
 
     html.Hr(),
 
-    html.H2("City-Level Distribution"),
-    dcc.Graph(figure=fig_residency_city),
-    dcc.Graph(figure=fig_quota_city),
+    # CITY STORY — LOCALIZED VIEW
+    html.H2("City-Level Residency & Quota Distribution"),
+    html.Div([
+        dcc.Graph(figure=fig_residency_city),
+        dcc.Graph(figure=fig_quota_city)
+    ], style={"display": "flex", "gap": "40px"}),
 
     html.Hr(),
 
-    html.H2("Specialty Portfolio"),
-    dcc.Graph(figure=fig_specialty_volume),
-    dcc.Graph(figure=fig_funnel),
-
-    html.Hr(),
-
-    html.H2("Accreditation Trend"),
-    dcc.Graph(figure=fig_time),
-
-    html.Hr(),
-
+    # SPECIALTY STORY — PORTFOLIO STRUCTURE
     html.H2("Specialty Portfolio Structure"),
+    html.Div([
+        dcc.Graph(figure=fig_specialty_volume),
+        dcc.Graph(figure=fig_funnel)
+    ], style={"display": "flex", "gap": "40px"}),
+
+    html.Hr(),
+
+    # UNIVERSITY + SPECIALTY TABLE
     html.H2("University + Specialty Structure"),
     dash_table.DataTable(
         data=university_specialty_table.round(2).to_dict("records"),
@@ -280,12 +291,17 @@ app.layout = html.Div([
     ),
 
     html.Hr(),
+
+    # TEMPORAL STORY — ACCREDITATION MOMENTUM
+    html.H2("Accreditation Trend Over Time"),
+    dcc.Graph(figure=fig_time),
+
 ])
 
 # =====================================================
-# RUN (Development Only)
+# RUN
 # =====================================================
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
-    app.run(host="0.0.0.0", port=port)
-
+    app.run(host="0.0.0.0", port=port, debug=True)
