@@ -27,7 +27,7 @@ if not DATABASE_URL:
 engine = create_engine(DATABASE_URL, pool_pre_ping=True)
 
 # =====================================================
-# LOAD DATA
+# LOAD & PREPARE DATA
 # =====================================================
 
 df = pd.read_sql(f"SELECT * FROM {TABLE}", engine)
@@ -37,19 +37,19 @@ df["program_length"] = pd.to_numeric(df["program_length"], errors="coerce")
 df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 
 # =====================================================
-# CITY MAPPING
+# CITY MAPPING (Postal FSA → City)
 # =====================================================
 
 FSA_TO_CITY = {
-    "H3A": "Montreal","A1C": "St. John's","M5S": "Toronto","K1N": "Ottawa",
-    "L8S": "Hamilton","L6Y": "Brampton","N3R": "Brantford","N2L": "Waterloo",
-    "N2G": "Kitchener","N9B": "Windsor","L2G": "Niagara","N3Y": "Simcoe",
-    "N4K": "Owen Sound","T6G": "Edmonton","R3T": "Winnipeg",
-    "V2T": "Fraser","V6T": "Vancouver"
+    "H3A": "Montreal", "A1C": "St. John's", "M5S": "Toronto", "K1N": "Ottawa",
+    "L8S": "Hamilton", "L6Y": "Brampton", "N3R": "Brantford", "N2L": "Waterloo",
+    "N2G": "Kitchener", "N9B": "Windsor", "L2G": "Niagara", "N3Y": "Simcoe",
+    "N4K": "Owen Sound", "T6G": "Edmonton", "R3T": "Winnipeg",
+    "V2T": "Fraser", "V6T": "Vancouver"
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
-df["city"] = df["FSA"].map(FSA_TO_CITY)
+df["city"] = df["FSA"].map(FSA_TO_CITY).fillna("Unknown")
 
 # =====================================================
 # KPI CALCULATIONS
@@ -110,8 +110,9 @@ city_quota = (
 )
 
 # =====================================================
-# TABLE: SPECIALTY
+# TABLE: SPECIALTY-LEVEL STRUCTURE (NO UNIVERSITY INDEX)
 # =====================================================
+
 specialty_table = (
     df.groupby("specialty")
       .agg(
@@ -122,6 +123,7 @@ specialty_table = (
       .reset_index()
       .sort_values("Residencies", ascending=False)
 )
+
 # =====================================================
 # FIGURES
 # =====================================================
@@ -235,6 +237,7 @@ app.layout = html.Div([
         style={"textAlign": "center", "marginBottom": "40px"}
     ),
 
+    # National KPIs
     html.H2("National Overview"),
     html.Div([
         html.Div([html.H4("Avg Quota / Specialty"), html.H2(f"{avg_quota_overall}")], style=CARD_STYLE),
@@ -246,31 +249,36 @@ app.layout = html.Div([
 
     html.Hr(),
 
+    # Provincial view
     html.H2("Provincial Capacity & Distribution"),
     dcc.Graph(figure=fig_residency_prov),
     dcc.Graph(figure=fig_quota_prov),
 
     html.Hr(),
 
+    # City view
     html.H2("City-Level Distribution"),
     dcc.Graph(figure=fig_residency_city),
     dcc.Graph(figure=fig_quota_city),
 
     html.Hr(),
 
+    # Specialty portfolio
     html.H2("Specialty Portfolio"),
     dcc.Graph(figure=fig_specialty_volume),
     dcc.Graph(figure=fig_funnel),
 
     html.Hr(),
 
+    # Accreditation trend
     html.H2("Accreditation Trend"),
     dcc.Graph(figure=fig_time),
 
     html.Hr(),
 
+    # Specialty table (no university index)
     html.H2("Specialty Portfolio Structure"),
-        dash_table.DataTable(
+    dash_table.DataTable(
         data=specialty_table.round(2).to_dict("records"),
         columns=[{"name": i, "id": i} for i in specialty_table.columns],
         sort_action="native",
@@ -281,10 +289,9 @@ app.layout = html.Div([
 ])
 
 # =====================================================
-# RUN (Development Only)
+# RUN
 # =====================================================
+
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
-
-
