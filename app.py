@@ -34,19 +34,44 @@ df["program_length"] = pd.to_numeric(df["program_length"], errors="coerce")
 df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 
 # =====================================================
-# CITY MAPPING
+# CITY MAPPING (FSA → City)
 # =====================================================
 
 FSA_TO_CITY = {
-    "H3A": "Montreal","A1C": "St. John's","M5S": "Toronto","K1N": "Ottawa",
-    "L8S": "Hamilton","L6Y": "Brampton","N3R": "Brantford","N2L": "Waterloo",
-    "N2G": "Kitchener","N9B": "Windsor","L2G": "Niagara","N3Y": "Simcoe",
-    "N4K": "Owen Sound","T6G": "Edmonton","R3T": "Winnipeg",
-    "V2T": "Fraser","V6T": "Vancouver"
+    "H3A": "Montreal", "A1C": "St. John's", "M5S": "Toronto", "K1N": "Ottawa",
+    "L8S": "Hamilton", "L6Y": "Brampton", "N3R": "Brantford", "N2L": "Waterloo",
+    "N2G": "Kitchener", "N9B": "Windsor", "L2G": "Niagara", "N3Y": "Simcoe",
+    "N4K": "Owen Sound", "T6G": "Edmonton", "R3T": "Winnipeg",
+    "V2T": "Fraser", "V6T": "Vancouver"
+}
+
+# Largest city fallback per province
+PROVINCE_LARGEST_CITY = {
+    "ON": "Toronto",
+    "QC": "Montreal",
+    "BC": "Vancouver",
+    "AB": "Calgary",
+    "MB": "Winnipeg",
+    "SK": "Saskatoon",
+    "NS": "Halifax",
+    "NB": "Moncton",
+    "NL": "St. John's",
+    "PE": "Charlottetown",
+    "YT": "Whitehorse",
+    "NT": "Yellowknife",
+    "NU": "Iqaluit"
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
+
+# Step 1: Try FSA mapping
 df["city"] = df["FSA"].map(FSA_TO_CITY)
+
+# Step 2: Fallback to province largest city
+df["city"] = df.apply(
+    lambda row: row["city"] if pd.notna(row["city"]) else PROVINCE_LARGEST_CITY.get(row["province"], "Unknown"),
+    axis=1
+)
 
 # =====================================================
 # KPI CALCULATIONS
@@ -71,8 +96,8 @@ avg_program_length = round(df["program_length"].mean(), 1)
 prov_programs = df.groupby("province").size().reset_index(name="Programs")
 prov_quota = df.groupby("province")["quota"].sum().reset_index(name="Quota")
 
-city_programs = df.groupby(["city","province"]).size().reset_index(name="Programs")
-city_quota = df.groupby(["city","province"])["quota"].sum().reset_index(name="Quota")
+city_programs = df.groupby(["city", "province"]).size().reset_index(name="Programs")
+city_quota = df.groupby(["city", "province"])["quota"].sum().reset_index(name="Quota")
 
 # =====================================================
 # SPECIALTY TABLE (NO UNIVERSITY)
@@ -81,9 +106,9 @@ city_quota = df.groupby(["city","province"])["quota"].sum().reset_index(name="Qu
 specialty_table = (
     df.groupby("specialty")
       .agg(
-          Residencies=("specialty","count"),
-          Avg_Quota=("quota","mean"),
-          Avg_Length=("program_length","mean")
+          Residencies=("specialty", "count"),
+          Avg_Quota=("quota", "mean"),
+          Avg_Length=("program_length", "mean")
       )
       .reset_index()
       .sort_values("Residencies", ascending=False)
@@ -93,19 +118,25 @@ specialty_table = (
 # FIGURES
 # =====================================================
 
-fig_residency_prov = px.bar(prov_programs, x="province", y="Programs", color="Programs",
-                            color_continuous_scale="Rainbow",
-                            title="Residency Count per Province")
+fig_residency_prov = px.bar(
+    prov_programs, x="province", y="Programs", color="Programs",
+    color_continuous_scale="Rainbow", title="Residency Count per Province"
+)
 
-fig_quota_prov = px.bar(prov_quota, x="province", y="Quota", color="Quota",
-                         color_continuous_scale="Rainbow",
-                         title="Total Quota per Province")
+fig_quota_prov = px.bar(
+    prov_quota, x="province", y="Quota", color="Quota",
+    color_continuous_scale="Rainbow", title="Total Quota per Province"
+)
 
-fig_residency_city = px.bar(city_programs, x="city", y="Programs", color="province",
-                            title="Residency Count per City")
+fig_residency_city = px.bar(
+    city_programs, x="city", y="Programs", color="province",
+    title="Residency Count per City"
+)
 
-fig_quota_city = px.bar(city_quota, x="city", y="Quota", color="province",
-                         title="Total Quota per City")
+fig_quota_city = px.bar(
+    city_quota, x="city", y="Quota", color="province",
+    title="Total Quota per City"
+)
 
 specialty_dist = df.groupby("specialty").size().reset_index(name="Programs")
 
@@ -116,8 +147,7 @@ fig_specialty_volume = px.bar(
 )
 
 df["length_bucket"] = pd.cut(
-    df["program_length"],
-    bins=[0,2,4,6,10],
+    df["program_length"], bins=[0,2,4,6,10],
     labels=["≤2 Years","3–4 Years","5–6 Years","7+ Years"]
 )
 
@@ -208,4 +238,3 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
-
