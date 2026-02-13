@@ -43,8 +43,9 @@ df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 FSA_TO_CITY = {
     "H3A": "Montreal","A1C": "St. John's","M5S": "Toronto","K1N": "Ottawa",
     "L8S": "Hamilton","L6Y": "Brampton","N3R": "Brantford","N2L": "Waterloo",
-    "N2G": "Kitchener","N9B": "Windsor","L2G": "Niagara",
-    "T6G": "Edmonton","R3T": "Winnipeg","V6T": "Vancouver"
+    "N2G": "Kitchener","N9B": "Windsor","L2G": "Niagara","N3Y": "Simcoe",
+    "N4K": "Owen Sound","T6G": "Edmonton","R3T": "Winnipeg",
+    "V2T": "Fraser","V6T": "Vancouver"
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
@@ -109,19 +110,18 @@ city_quota = (
 )
 
 # =====================================================
-# NEW TABLE: UNIVERSITY + SPECIALTY
+# TABLE: SPECIALTY
 # =====================================================
-
-university_specialty_table = (
-    df.groupby(["university", "specialty"])
+specialty_table = (
+    df.groupby("specialty")
       .agg(
           Residencies=("specialty", "count"),
-          Total_Quota=("quota", "sum")
+          Avg_Quota=("quota", "mean"),
+          Avg_Length=("program_length", "mean")
       )
       .reset_index()
-      .sort_values(["university", "Residencies"], ascending=[True, False])
+      .sort_values("Residencies", ascending=False)
 )
-
 # =====================================================
 # FIGURES
 # =====================================================
@@ -286,4 +286,5 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+
 
