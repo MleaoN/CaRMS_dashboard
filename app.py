@@ -46,7 +46,7 @@ FSA_TO_CITY = {
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
-df["city"] = df["FSA"].map(FSA_TO_CITY).fillna("Unknown")
+df["city"] = df["FSA"].map(FSA_TO_CITY)
 
 # =====================================================
 # KPI CALCULATIONS
@@ -208,3 +208,4 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+
