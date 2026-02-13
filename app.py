@@ -12,7 +12,7 @@ from dash import dcc, html, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 
-print("DEBUG: DATABASE_URL =", os.getenv("DATABASE_URL"))
+#print("DEBUG: DATABASE_URL =", os.getenv("DATABASE_URL"))
 
 # =====================================================
 # DATABASE CONFIG (Render Compatible)
@@ -109,6 +109,20 @@ city_quota = (
 )
 
 # =====================================================
+# NEW TABLE: UNIVERSITY + SPECIALTY
+# =====================================================
+
+university_specialty_table = (
+    df.groupby(["university", "specialty"])
+      .agg(
+          Residencies=("specialty", "count"),
+          Total_Quota=("quota", "sum")
+      )
+      .reset_index()
+      .sort_values(["university", "Residencies"], ascending=[True, False])
+)
+
+# =====================================================
 # FIGURES
 # =====================================================
 
@@ -161,7 +175,6 @@ fig_specialty_volume = px.bar(
     title="Top Specialties by Program Volume"
 )
 
-# Funnel
 df["length_bucket"] = pd.cut(
     df["program_length"],
     bins=[0, 2, 4, 6, 10],
@@ -183,7 +196,6 @@ fig_funnel = go.Figure(
 )
 fig_funnel.update_layout(title="Program Length Structure Funnel")
 
-# Time series
 df["year_month"] = df["approved_date"].dt.to_period("M").astype(str)
 
 time_series = (
@@ -200,24 +212,12 @@ fig_time = px.line(
     title="Accreditation Activity Over Time"
 )
 
-
-specialty_table = (
-    df.groupby("specialty")
-      .agg(
-          Residencies=("specialty", "count"),
-          Avg_Quota=("quota", "mean"),
-          Avg_Length=("program_length", "mean")
-      )
-      .reset_index()
-      .sort_values("Residencies", ascending=False)
-)
-
 # =====================================================
 # DASH APP
 # =====================================================
 
 app = dash.Dash(__name__)
-server = app.server  # REQUIRED for gunicorn
+server = app.server
 
 CARD_STYLE = {
     "padding": "18px",
@@ -264,22 +264,21 @@ app.layout = html.Div([
 
     html.Hr(),
 
-html.H2("Accreditation Trend"),
-dcc.Graph(figure=fig_time),
+    html.H2("Accreditation Trend"),
+    dcc.Graph(figure=fig_time),
 
-html.H2("Specialty Portfolio Structure"),
-html.Div([
-    dcc.Graph(figure=fig_specialty_volume),
-    dcc.Graph(figure=fig_funnel)
-], style={"display": "flex", "gap": "40px"}),
+    html.Hr(),
 
-dash_table.DataTable(
-    data=specialty_table.round(2).to_dict("records"),
-    columns=[{"name": i, "id": i} for i in specialty_table.columns],
-    sort_action="native",
-    page_size=10
-),    html.Hr(),
+    html.H2("University + Specialty Structure"),
+    dash_table.DataTable(
+        data=university_specialty_table.round(2).to_dict("records"),
+        columns=[{"name": i, "id": i} for i in university_specialty_table.columns],
+        sort_action="native",
+        page_size=12,
+        style_table={"overflowX": "auto"},
+    ),
 
+    html.Hr(),
 ])
 
 # =====================================================
@@ -288,8 +287,3 @@ dash_table.DataTable(
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
-
-
-
-
-
