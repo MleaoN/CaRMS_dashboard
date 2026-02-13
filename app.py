@@ -63,19 +63,19 @@ df["province"] = df["province"].replace(PROVINCE_NORMALIZE)
 
 # Largest city fallback per province
 PROVINCE_LARGEST_CITY = {
-    "ON": "Toronto",
-    "QC": "Montreal",
-    "BC": "Vancouver",
-    "AB": "Calgary",
-    "MB": "Winnipeg",
-    "SK": "Saskatoon",
-    "NS": "Halifax",
-    "NB": "Moncton",
-    "NL": "St. John's",
-    "PE": "Charlottetown",
-    "YT": "Whitehorse",
-    "NT": "Yellowknife",
-    "NU": "Iqaluit"
+    "ON": "On_unkow_city",
+    "QC": "QC_unkow_city",
+    "BC": "BC_unkow_city",
+    "AB": "AB_unkow_city",
+    "MB": "MB_unkow_city",
+    "SK": "SK_unkow_city",
+    "NS": "NS_unkow_city",
+    "NB": "NB_unkow_city",
+    "NL": "NL_unkow_city",
+    "PE": "PE_unkow_city",
+    "YT": "YT_unkow_city",
+    "NT": "NT_unkow_city",
+    "NU": "NU_unkow_city"
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
@@ -255,3 +255,4 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+
