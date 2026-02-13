@@ -34,7 +34,7 @@ df["program_length"] = pd.to_numeric(df["program_length"], errors="coerce")
 df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 
 # =====================================================
-# CITY MAPPING (FSA → City)
+# CITY MAPPING (FSA → City, fallback to province largest city)
 # =====================================================
 
 FSA_TO_CITY = {
@@ -44,6 +44,22 @@ FSA_TO_CITY = {
     "N4K": "Owen Sound", "T6G": "Edmonton", "R3T": "Winnipeg",
     "V2T": "Fraser", "V6T": "Vancouver"
 }
+
+# Normalize province names
+PROVINCE_NORMALIZE = {
+    "Ontario": "ON",
+    "Quebec": "QC",
+    "British Columbia": "BC",
+    "Alberta": "AB",
+    "Manitoba": "MB",
+    "Saskatchewan": "SK",
+    "Nova Scotia": "NS",
+    "New Brunswick": "NB",
+    "Newfoundland and Labrador": "NL",
+    "Prince Edward Island": "PE"
+}
+
+df["province"] = df["province"].replace(PROVINCE_NORMALIZE)
 
 # Largest city fallback per province
 PROVINCE_LARGEST_CITY = {
@@ -67,9 +83,10 @@ df["FSA"] = df["postal_code"].astype(str).str[:3]
 # Step 1: Try FSA mapping
 df["city"] = df["FSA"].map(FSA_TO_CITY)
 
-# Step 2: Fallback to province largest city
+# Step 2: Fallback to largest city in province
 df["city"] = df.apply(
-    lambda row: row["city"] if pd.notna(row["city"]) else PROVINCE_LARGEST_CITY.get(row["province"], "Unknown"),
+    lambda row: row["city"] if pd.notna(row["city"]) 
+                else PROVINCE_LARGEST_CITY.get(row["province"], "Unknown"),
     axis=1
 )
 
@@ -106,9 +123,9 @@ city_quota = df.groupby(["city", "province"])["quota"].sum().reset_index(name="Q
 specialty_table = (
     df.groupby("specialty")
       .agg(
-          Residencies=("specialty", "count"),
-          Avg_Quota=("quota", "mean"),
-          Avg_Length=("program_length", "mean")
+          Residencies=("specialty","count"),
+          Avg_Quota=("quota","mean"),
+          Avg_Length=("program_length","mean")
       )
       .reset_index()
       .sort_values("Residencies", ascending=False)
