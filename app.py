@@ -34,7 +34,7 @@ df["program_length"] = pd.to_numeric(df["program_length"], errors="coerce")
 df["approved_date"] = pd.to_datetime(df["approved_date"], errors="coerce")
 
 # =====================================================
-# CITY MAPPING (FSA → City, fallback to province largest city)
+# CITY MAPPING (FSA → City, fallback to province_unknown_city)
 # =====================================================
 
 FSA_TO_CITY = {
@@ -61,21 +61,9 @@ PROVINCE_NORMALIZE = {
 
 df["province"] = df["province"].replace(PROVINCE_NORMALIZE)
 
-# Largest city fallback per province
-PROVINCE_LARGEST_CITY = {
-    "ON": "On_unkow_city",
-    "QC": "QC_unkow_city",
-    "BC": "BC_unkow_city",
-    "AB": "AB_unkow_city",
-    "MB": "MB_unkow_city",
-    "SK": "SK_unkow_city",
-    "NS": "NS_unkow_city",
-    "NB": "NB_unkow_city",
-    "NL": "NL_unkow_city",
-    "PE": "PE_unkow_city",
-    "YT": "YT_unkow_city",
-    "NT": "NT_unkow_city",
-    "NU": "NU_unkow_city"
+# Province → placeholder city
+PROVINCE_UNKNOWN_CITY = {
+    prov: f"{prov}_unknown_city" for prov in df["province"].unique()
 }
 
 df["FSA"] = df["postal_code"].astype(str).str[:3]
@@ -83,10 +71,10 @@ df["FSA"] = df["postal_code"].astype(str).str[:3]
 # Step 1: Try FSA mapping
 df["city"] = df["FSA"].map(FSA_TO_CITY)
 
-# Step 2: Fallback to largest city in province
+# Step 2: Fallback to province_unknown_city
 df["city"] = df.apply(
-    lambda row: row["city"] if pd.notna(row["city"]) 
-                else PROVINCE_LARGEST_CITY.get(row["province"], "Unknown"),
+    lambda row: row["city"] if pd.notna(row["city"])
+                else PROVINCE_UNKNOWN_CITY.get(row["province"], "unknown_city"),
     axis=1
 )
 
@@ -255,4 +243,3 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
-
