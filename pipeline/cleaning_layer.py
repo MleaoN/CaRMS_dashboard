@@ -392,7 +392,6 @@ def run():
             "postal_code",
             "quota",
             "approved_date",
-            "program_director",
             "program_length"
         ]].copy()
 
@@ -419,4 +418,5 @@ def run():
 
 if __name__ == "__main__":
     run()
+
 
