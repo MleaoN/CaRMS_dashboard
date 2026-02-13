@@ -269,6 +269,7 @@ app.layout = html.Div([
 
     html.Hr(),
 
+    html.H2("Specialty Portfolio Structure"),
     html.H2("University + Specialty Structure"),
     dash_table.DataTable(
         data=university_specialty_table.round(2).to_dict("records"),
@@ -287,3 +288,4 @@ app.layout = html.Div([
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+
