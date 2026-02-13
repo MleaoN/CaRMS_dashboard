@@ -372,8 +372,10 @@ def run():
         print(f"Loaded {len(df)} rows from staging")
 
         # Clean fields
-        df["postal_code"] = df["postal_code"].apply(clean_postal)
-        df["province"] = df["postal_code"].apply(infer_province)
+        df["postal_code_clean"] = df.apply(
+        lambda r: clean_postal(r["postal_code"], r["city"], r["university"]),
+        axis=1)
+        df["province_clean"] = df.apply(infer_province, axis=1)
         df["university"] = df["university"].apply(clean_university)
         df["specialty"] = df["specialty"].apply(clean_specialty)
         df["accreditation_status"] = df["accreditation_status"].apply(clean_accreditation)
@@ -417,3 +419,4 @@ def run():
 
 if __name__ == "__main__":
     run()
+
