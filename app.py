@@ -14,8 +14,8 @@ from dash import dcc, html, dash_table
 import plotly.express as px
 import plotly.graph_objects as go
 
-print("DEBUG: DATABASE_URL =", os.getenv("DATABASE_URL"))
-
+app = dash.Dash(__name__)
+server = app.server
 # =====================================================
 # DATABASE CONFIG (Render Compatible)
 # =====================================================
@@ -497,3 +497,4 @@ app.layout = html.Div(
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8050))
     app.run(host="0.0.0.0", port=port)
+
