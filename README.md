@@ -1,103 +1,81 @@
-# CaRMS Residency Program Strategy Dashboard
+# # 🇨🇦 CaRMS Residency Strategy Dashboard  
 
-## Executive Summary
+## Overview  
 
-This project delivers an end‑to‑end data pipeline and interactive analytics dashboard for analyzing Canadian residency programs.  
-The goal is to transform raw CaRMS program descriptions into structured, analytics‑ready datasets that support:
+This project delivers an end-to-end data pipeline and interactive analytics dashboard for analyzing Canadian residency programs.  
 
-- Strategic capacity planning  
-- Accreditation monitoring  
-- Provincial and specialty‑level insights  
-- Program length and structure evaluation  
+It transforms semi-structured CaRMS program descriptions into structured PostgreSQL tables and generates strategic insights through a cloud-deployed Dash application.
 
-The system follows a layered architecture:
+The project demonstrates applied data engineering, statistical analysis, and business intelligence in a production-ready environment.
 
-**Raw Data → ETL Layer → Cleaning & Enrichment → PostgreSQL → Dash Analytics App**
-
----
-
-## Architecture
-
-### 1. Data Layer
-- Source file: `program_descriptions.csv`  
-- Stored under `/data`  
-- Contains residency program metadata (specialty, province, city, accreditation status, quota, etc.)
-
----
-
-### 2. ETL Pipeline  
-**File:** `pipeline/etl_pipeline.py`
-
-**Responsibilities**
-- Parse values from a **non‑structured, inconsistently formatted source table**
-- Extract structured fields from free‑text and semi‑structured descriptions
-- Perform initial validation (presence checks, basic type inference)
-- Load the parsed raw fields into a PostgreSQL staging table
-
-This layer focuses on **interpreting and extracting meaning** from the messy input data, without enforcing final naming conventions or schema normalization.
-
----
-
-### 3. Cleaning & Enrichment Layer  
-**File:** `pipeline/cleaning_layer.py`
-
-**Responsibilities**
-- Normalize column names and enforce schema consistency  
-- Apply type casting and handle missing values  
-- Standardize categorical values (province, city, specialty)  
-- Engineer analytical features (time buckets, accreditation flags)  
-- Produce a clean, analytics‑ready dataset for the dashboard  
-
----
-
-### 4. Analytics & Dashboard Layer  
-**File:** `app.py`
-
-**Responsibilities**
-- KPI computation  
-- Provincial and city‑level aggregations  
-- Specialty portfolio analysis  
-- Program length funnel  
-- Accreditation trend visualization  
-- Interactive Dash dashboard deployed on Render  
-
----
-
-## Running the Project
-
-### Running Locally
-
-1. Install dependencies:
-```bash
-   pip install -r requirements.txt
-```
-2. Set your local environment variable:
-export DATABASE_URL="postgresql://<user>:<password>@<host>/<database>"
-
-- Use your local or cloud PostgreSQL connection string.
-
-3.  Run the Dash app:
-```bash
-python app.py
-```
-The dashboard will be available at: http://127.0.0.1:8050
-
-### Running as a Web Service (Render Deployment)
-
+**Live App:**  
 https://carms-dashboard.onrender.com/
 
-###Key Metrics & Insights- Average quota per specialty
+---
 
-- Highest and lowest quota specialties
-- Accreditation approval rate
-- Residency distribution by province and city
-- Program length structure (1–7 years)
-- Accreditation trends over time
+## Architecture  
 
-###Technology Stack
+Raw CSV  
+→ ETL Parsing Layer  
+→ PostgreSQL (Staging)  
+→ Cleaning & Feature Engineering  
+→ Analytics Tables  
+→ Dash Dashboard (Render Deployment)
 
-- Python (Pandas, SQLAlchemy)
-- PostgreSQL
-- Dash & Plotly
-- Gunicorn (production server)
-- Render (cloud deployment)
+---
+
+## Key Features  
+
+### Data Engineering  
+
+- Semi-structured text parsing into structured fields  
+- Schema normalization and type enforcement  
+- Feature engineering (quota per residency, time buckets, flags)  
+- Column-level data quality metrics table  
+- PostgreSQL cloud integration  
+
+### Statistical Analysis  
+
+- Kruskal–Wallis test to compare quota-per-residency distributions across provinces  
+- Dunn post-hoc test for pairwise provincial comparisons  
+- Boxplot visualization of statistical findings  
+
+### Business Intelligence  
+
+- National KPI summary  
+- Residency and quota distribution by province and city  
+- Specialty portfolio analysis  
+- Program duration funnel  
+- Accreditation trend over time  
+- Data quality transparency section  
+
+---
+
+## Technology Stack  
+
+- Python (Pandas, NumPy)  
+- PostgreSQL  
+- SQLAlchemy  
+- Dash & Plotly  
+- SciPy / scikit-posthocs  
+- Gunicorn  
+- Render (Cloud Deployment)  
+
+---
+
+## Why This Project Matters  
+
+This project demonstrates:
+
+- Structured data engineering workflow  
+- Cloud database deployment  
+- Statistical reasoning beyond descriptive analytics  
+- End-to-end pipeline ownership  
+- Production deployment of an interactive analytics application  
+
+It was developed as part of a Junior Data Scientist application requirement and serves as a portfolio-ready example for:
+
+- Junior Data Scientist  
+- Data Analyst  
+- BI Developer  
+- Entry-Level Data Engineer  
