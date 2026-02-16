@@ -16,10 +16,10 @@ https://carms-dashboard.onrender.com/
 ## Architecture  
 
 Raw CSV  
-→ ETL Parsing Layer  
-→ PostgreSQL (Staging--Render hosted)  
-→ Cleaning & Feature Engineering  
-→ Analytics Tables  (PostgreSQL--Render hosted)
+→ ETL Parsing Layer (Local)  
+→ PostgreSQL (Staging — Render hosted)  
+→ Cleaning & Feature Engineering (Local)  
+→ Analytics Tables (PostgreSQL — Render hosted)  
 → Dash Dashboard (Render Deployment)
 
 
@@ -130,6 +130,7 @@ It was developed as part of a Junior Data Scientist application requirement and 
 - Data Analyst  
 - BI Developer  
 - Data Engineer  
+
 
 
 
