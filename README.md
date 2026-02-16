@@ -22,6 +22,7 @@ Raw CSV
 → Analytics Tables  (PostgreSQL--Render hosted)
 → Dash Dashboard (Render Deployment)
 
+
 ---
 ## ⚙️ Running the Project Locally
 
@@ -129,6 +130,7 @@ It was developed as part of a Junior Data Scientist application requirement and 
 - Data Analyst  
 - BI Developer  
 - Data Engineer  
+
 
 
 
