@@ -19,7 +19,7 @@ Raw CSV
 → ETL Parsing Layer  
 → PostgreSQL (Staging--Render Server)  
 → Cleaning & Feature Engineering  
-→ Analytics Tables(PostgreSQL -- Render Server)
+→ Analytics Tables(PostgreSQL -- Render Server)  
 → Dash Dashboard (Render Deployment)
 
 ---
@@ -125,9 +125,10 @@ This project demonstrates:
 
 It was developed as part of a Junior Data Scientist application requirement and serves as a portfolio-ready example for:
 
-- Junior Data Scientist  
+- Data Scientist  
 - Data Analyst  
 - BI Developer  
-- Entry-Level Data Engineer  
+- Data Engineer  
+
 
 
